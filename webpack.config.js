@@ -21,6 +21,7 @@ module.exports = (env) => {
       path: path.resolve(__dirname, 'dist'),
       clean: true,
     },
+    devtool: 'source-map',
     resolve: {
       alias: {
         src: path.resolve(__dirname, 'src'),
