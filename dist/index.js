@@ -48126,7 +48126,8 @@ async function getFeedUrlsFromNotion() {
 
   const feeds = response.results.map(item => ({
     title: item.properties.Title.title[0].plain_text,
-    feedUrl: item.properties.Link.url
+    feedUrl: item.properties.Link.url,
+    feedId: item.id
   }));
   return feeds;
 }
@@ -48134,7 +48135,8 @@ async function addFeedItemToNotion(notionItem) {
   const {
     title,
     link,
-    content
+    content,
+    feedId
   } = notionItem;
   const notion = new src/* Client */.KU({
     auth: NOTION_API_TOKEN,
@@ -48156,6 +48158,11 @@ async function addFeedItemToNotion(notionItem) {
         },
         Link: {
           url: link
+        },
+        Source: {
+          relation: [{
+            id: feedId
+          }]
         }
       },
       children: content
@@ -48240,21 +48247,23 @@ async function getNewFeedItemsFrom(feedUrl) {
   });
 }
 
-async function getNewFeedItems() {
-  let allNewFeedItems = [];
+async function* getNewFeedItems() {
+  const allNewFeedItems = [];
   const feeds = await getFeedUrlsFromNotion();
 
   for (let i = 0; i < feeds.length; i++) {
     const {
-      feedUrl
+      feedUrl,
+      feedId
     } = feeds[i];
     const feedItems = await getNewFeedItemsFrom(feedUrl);
-    allNewFeedItems = [...allNewFeedItems, ...feedItems];
-  } // sort feed items by published date
-
-
-  allNewFeedItems.sort((a, b) => new Date(a.pubDate) - new Date(b.pubDate));
-  return allNewFeedItems;
+    const itemsContext = {
+      feedId,
+      feedUrl,
+      feedItems
+    };
+    yield itemsContext;
+  }
 }
 // EXTERNAL MODULE: ./node_modules/@tryfabric/martian/build/src/index.js
 var build_src = __webpack_require__(4906);
@@ -49232,17 +49241,22 @@ function htmlToNotionBlocks(htmlContent) {
 
 
 async function index() {
-  const feedItems = await getNewFeedItems();
+  const generator = getNewFeedItems();
+  let i;
 
-  for (let i = 0; i < feedItems.length; i++) {
-    const item = feedItems[i];
-    const notionItem = {
-      title: item.title,
-      link: item.link,
-      content: htmlToNotionBlocks(item.content)
-    };
-    await addFeedItemToNotion(notionItem);
-  }
+  do {
+    i = await generator.next();
+    const feed = i.value;
+    feed.feedItems.forEach(async item => {
+      const notionItem = {
+        feedId: feed.feedId,
+        title: item.title,
+        link: item.link,
+        content: htmlToNotionBlocks(item.content)
+      };
+      await addFeedItemToNotion(notionItem);
+    });
+  } while (!i.done);
 
   await deleteOldUnreadFeedItemsFromNotion();
 }
@@ -49252,3 +49266,4 @@ index();
 
 /******/ })()
 ;
+//# sourceMappingURL=index.js.map
