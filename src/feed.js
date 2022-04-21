@@ -19,19 +19,19 @@ async function getNewFeedItemsFrom(feedUrl) {
   });
 }
 
-export default async function getNewFeedItems() {
-  let allNewFeedItems = [];
-
+export default async function* getNewFeedItems() {
+  const allNewFeedItems = [];
   const feeds = await getFeedUrlsFromNotion();
 
   for (let i = 0; i < feeds.length; i++) {
-    const { feedUrl } = feeds[i];
+    const { feedUrl, feedId } = feeds[i];
     const feedItems = await getNewFeedItemsFrom(feedUrl);
-    allNewFeedItems = [...allNewFeedItems, ...feedItems];
+    const itemsContext = {
+      feedId,
+      feedUrl,
+      feedItems,
+    };
+
+    yield itemsContext;
   }
-
-  // sort feed items by published date
-  allNewFeedItems.sort((a, b) => new Date(a.pubDate) - new Date(b.pubDate));
-
-  return allNewFeedItems;
 }

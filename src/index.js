@@ -6,17 +6,21 @@ import {
 import htmlToNotionBlocks from './parser';
 
 async function index() {
-  const feedItems = await getNewFeedItems();
-
-  for (let i = 0; i < feedItems.length; i++) {
-    const item = feedItems[i];
-    const notionItem = {
-      title: item.title,
-      link: item.link,
-      content: htmlToNotionBlocks(item.content),
-    };
-    await addFeedItemToNotion(notionItem);
-  }
+  const generator = getNewFeedItems();
+  let i;
+  do {
+    i = await generator.next();
+    const feed = i.value;
+    feed.feedItems.forEach(async (item) => {
+      const notionItem = {
+        feedId: feed.feedId,
+        title: item.title,
+        link: item.link,
+        content: htmlToNotionBlocks(item.content),
+      };
+      await addFeedItemToNotion(notionItem);
+    });
+  } while (!i.done);
 
   await deleteOldUnreadFeedItemsFromNotion();
 }
