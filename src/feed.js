@@ -3,7 +3,11 @@ import timeDifference from './helpers';
 import { getFeedUrlsFromNotion } from './notion';
 
 async function getNewFeedItemsFrom(feedUrl) {
-  const parser = new Parser();
+  const parser = new Parser({
+    customFields: {
+      item: [['media:group', 'mediaGroup', { includeSnippet: true }]],
+    },
+  });
   let rss;
   try {
     rss = await parser.parseURL(feedUrl);

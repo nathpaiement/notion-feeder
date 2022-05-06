@@ -12,11 +12,14 @@ async function index() {
     i = await generator.next();
     const feed = i.value;
     feed.feedItems.forEach(async (item) => {
+      const content =
+        item.content || item.mediaGroup['media:description'].join() || '';
+
       const notionItem = {
         feedId: feed.feedId,
         title: item.title,
         link: item.link,
-        content: htmlToNotionBlocks(item.content),
+        content: content.length ? htmlToNotionBlocks(content) : null,
       };
       await addFeedItemToNotion(notionItem);
     });
