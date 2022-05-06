@@ -48,7 +48,11 @@ export async function getFeedUrlsFromNotion() {
 }
 
 export async function addFeedItemToNotion(notionItem) {
-  const { title, link, content, feedId } = notionItem;
+  const { title, link, content, contentSnippet, feedId } = notionItem;
+
+  const parsedContent = [...`${title} ${contentSnippet}`.matchAll(/\w{3,}/g)]
+    .join(' ')
+    .toLowerCase();
 
   const notion = new Client({
     auth: NOTION_API_TOKEN,
@@ -77,6 +81,15 @@ export async function addFeedItemToNotion(notionItem) {
           relation: [
             {
               id: feedId,
+            },
+          ],
+        },
+        _parsedContent: {
+          rich_text: [
+            {
+              text: {
+                content: parsedContent,
+              },
             },
           ],
         },

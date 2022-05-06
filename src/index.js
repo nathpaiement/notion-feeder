@@ -20,6 +20,7 @@ async function index() {
         title: item.title,
         link: item.link,
         content: content.length ? htmlToNotionBlocks(content) : null,
+        contentSnippet: content.length ? content : null,
       };
       await addFeedItemToNotion(notionItem);
     });
