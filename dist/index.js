@@ -48136,8 +48136,10 @@ async function addFeedItemToNotion(notionItem) {
     title,
     link,
     content,
+    contentSnippet,
     feedId
   } = notionItem;
+  const parsedContent = [...`${title} ${contentSnippet}`.matchAll(/\w{3,}/g)].join(' ').toLowerCase();
   const notion = new src/* Client */.KU({
     auth: NOTION_API_TOKEN,
     logLevel
@@ -48162,6 +48164,13 @@ async function addFeedItemToNotion(notionItem) {
         Source: {
           relation: [{
             id: feedId
+          }]
+        },
+        _parsedContent: {
+          rich_text: [{
+            text: {
+              content: parsedContent
+            }
           }]
         }
       },
@@ -48227,7 +48236,13 @@ async function deleteOldUnreadFeedItemsFromNotion() {
 
 
 async function getNewFeedItemsFrom(feedUrl) {
-  const parser = new (rss_parser_default())();
+  const parser = new (rss_parser_default())({
+    customFields: {
+      item: [['media:group', 'mediaGroup', {
+        includeSnippet: true
+      }]]
+    }
+  });
   let rss;
 
   try {
@@ -49248,11 +49263,13 @@ async function index() {
     i = await generator.next();
     const feed = i.value;
     feed.feedItems.forEach(async item => {
+      const content = item.content || item.mediaGroup['media:description'].join() || '';
       const notionItem = {
         feedId: feed.feedId,
         title: item.title,
         link: item.link,
-        content: htmlToNotionBlocks(item.content)
+        content: content.length ? htmlToNotionBlocks(content) : null,
+        contentSnippet: content.length ? content : null
       };
       await addFeedItemToNotion(notionItem);
     });
