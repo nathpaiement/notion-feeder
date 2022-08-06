@@ -48089,7 +48089,10 @@ function timeDifference(date1, date2) {
 var main = __webpack_require__(9738);
 // EXTERNAL MODULE: ./node_modules/@notionhq/client/build/src/index.js
 var src = __webpack_require__(9267);
+;// CONCATENATED MODULE: ./package.json
+const package_namespaceObject = JSON.parse('{"u2":"notion-feed-reader","i8":"1.0.1"}');
 ;// CONCATENATED MODULE: ./src/notion.js
+
 
 
 main.config();
@@ -48139,7 +48142,7 @@ async function addFeedItemToNotion(notionItem) {
     contentSnippet,
     feedId
   } = notionItem;
-  const parsedContent = [...`${title} ${contentSnippet}`.matchAll(/\w{3,}/g)].join(' ').toLowerCase();
+  const parsedContent = [...`${title} ${contentSnippet ?? ''}`.matchAll(/\w{3,}/g)].join(' ').slice(0, 2000).toLowerCase().trim();
   const notion = new src/* Client */.KU({
     auth: NOTION_API_TOKEN,
     logLevel
@@ -48170,6 +48173,13 @@ async function addFeedItemToNotion(notionItem) {
           rich_text: [{
             text: {
               content: parsedContent
+            }
+          }]
+        },
+        _fetcher: {
+          rich_text: [{
+            text: {
+              content: `${package_namespaceObject.u2} v${package_namespaceObject.i8}`
             }
           }]
         }
@@ -48271,13 +48281,17 @@ async function* getNewFeedItems() {
       feedUrl,
       feedId
     } = feeds[i];
-    const feedItems = await getNewFeedItemsFrom(feedUrl);
-    const itemsContext = {
-      feedId,
-      feedUrl,
-      feedItems
-    };
-    yield itemsContext;
+
+    try {
+      const feedItems = await getNewFeedItemsFrom(feedUrl);
+      const itemsContext = {
+        feedId,
+        feedUrl,
+        feedItems
+      };
+      yield itemsContext;
+    } catch (error) {// do nothing
+    }
   }
 }
 // EXTERNAL MODULE: ./node_modules/@tryfabric/martian/build/src/index.js
@@ -49261,18 +49275,21 @@ async function index() {
 
   do {
     i = await generator.next();
-    const feed = i.value;
-    feed.feedItems.forEach(async item => {
-      const content = item.content || item.mediaGroup['media:description'].join() || '';
-      const notionItem = {
-        feedId: feed.feedId,
-        title: item.title,
-        link: item.link,
-        content: content.length ? htmlToNotionBlocks(content) : null,
-        contentSnippet: content.length ? content : null
-      };
-      await addFeedItemToNotion(notionItem);
-    });
+
+    if (i.value) {
+      const feed = i.value;
+      feed.feedItems.forEach(async item => {
+        const content = item.content || item.mediaGroup['media:description'].join() || '';
+        const notionItem = {
+          feedId: feed.feedId,
+          title: item.title,
+          link: item.link,
+          content: content.length ? htmlToNotionBlocks(content) : null,
+          contentSnippet: content.length ? content : null
+        };
+        await addFeedItemToNotion(notionItem);
+      });
+    }
   } while (!i.done);
 
   await deleteOldUnreadFeedItemsFromNotion();
