@@ -29,13 +29,18 @@ export default async function* getNewFeedItems() {
 
   for (let i = 0; i < feeds.length; i++) {
     const { feedUrl, feedId } = feeds[i];
-    const feedItems = await getNewFeedItemsFrom(feedUrl);
-    const itemsContext = {
-      feedId,
-      feedUrl,
-      feedItems,
-    };
 
-    yield itemsContext;
+    try {
+      const feedItems = await getNewFeedItemsFrom(feedUrl);
+      const itemsContext = {
+        feedId,
+        feedUrl,
+        feedItems,
+      };
+
+      yield itemsContext;
+    } catch (error) {
+      // do nothing
+    }
   }
 }

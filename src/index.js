@@ -10,20 +10,22 @@ async function index() {
   let i;
   do {
     i = await generator.next();
-    const feed = i.value;
-    feed.feedItems.forEach(async (item) => {
-      const content =
-        item.content || item.mediaGroup['media:description'].join() || '';
+    if (i.value) {
+      const feed = i.value;
+      feed.feedItems.forEach(async (item) => {
+        const content =
+          item.content || item.mediaGroup['media:description'].join() || '';
 
-      const notionItem = {
-        feedId: feed.feedId,
-        title: item.title,
-        link: item.link,
-        content: content.length ? htmlToNotionBlocks(content) : null,
-        contentSnippet: content.length ? content : null,
-      };
-      await addFeedItemToNotion(notionItem);
-    });
+        const notionItem = {
+          feedId: feed.feedId,
+          title: item.title,
+          link: item.link,
+          content: content.length ? htmlToNotionBlocks(content) : null,
+          contentSnippet: content.length ? content : null,
+        };
+        await addFeedItemToNotion(notionItem);
+      });
+    }
   } while (!i.done);
 
   await deleteOldUnreadFeedItemsFromNotion();
