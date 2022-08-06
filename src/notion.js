@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { Client, LogLevel } from '@notionhq/client';
+import packageInfo from '../package.json';
 
 dotenv.config();
 
@@ -93,6 +94,15 @@ export async function addFeedItemToNotion(notionItem) {
             {
               text: {
                 content: parsedContent,
+              },
+            },
+          ],
+        },
+        _fetcher: {
+          rich_text: [
+            {
+              text: {
+                content: `${packageInfo.name} v${packageInfo.version}`,
               },
             },
           ],
